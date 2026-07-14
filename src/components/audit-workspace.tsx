@@ -193,7 +193,7 @@ export function AuditWorkspace() {
           </p>
         </section>
 
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.08fr)_minmax(390px,0.72fr)]">
+        <div className="grid gap-6">
           <section className="overflow-hidden rounded-2xl border border-[#d4d0c5] bg-[#fbfaf6] shadow-[0_18px_60px_rgba(55,53,45,0.06)]">
             <div className="flex items-center justify-between border-b border-[#ddd9cf] px-5 py-4 md:px-6">
               <div className="flex items-center gap-3">
@@ -279,51 +279,62 @@ export function AuditWorkspace() {
             </div>
 
             <div className="p-5 md:p-6">
-              <div className="mb-4 grid grid-cols-3 rounded-lg bg-[#eceae3] p-1" role="tablist" aria-label="Document prompt type">
-                {(Object.keys(DOCUMENT_LABELS) as DocumentKind[]).map((kind) => (
-                  <button
-                    key={kind}
-                    type="button"
-                    role="tab"
-                    aria-selected={activePrompt === kind}
-                    onClick={() => setActivePrompt(kind)}
-                    className={`rounded-md px-3 py-2 text-xs font-medium transition ${activePrompt === kind ? "bg-white text-[#244d3e] shadow-sm" : "text-[#70736c] hover:text-[#30332f]"}`}
-                  >
-                    {DOCUMENT_LABELS[kind]}
-                  </button>
-                ))}
-              </div>
-              <textarea
-                aria-label={`${DOCUMENT_LABELS[activePrompt]} image description prompt`}
-                value={prompts[activePrompt]}
-                onChange={(event) => setPrompts((current) => ({ ...current, [activePrompt]: event.target.value }))}
-                className="min-h-64 w-full resize-y rounded-xl border border-[#d5d2c8] bg-white px-4 py-3.5 text-[13px] leading-6 text-[#3b3d39] outline-none transition placeholder:text-[#a6a69f] focus:border-[#6b9483] focus:ring-4 focus:ring-[#6b9483]/10"
-                spellCheck
-              />
-              <div className="mt-2 flex items-center justify-between font-mono text-[10px] text-[#85867f]">
-                <span>Used only for embedded image descriptions</span>
-                <span>{prompts[activePrompt].length.toLocaleString()} chars</span>
-              </div>
-
-              <div className="mt-5 border-t border-[#ddd9cf] pt-5">
-                <div className="mb-3 flex items-start justify-between gap-4">
-                  <div>
-                    <label htmlFor="security-prompt" className="text-xs font-semibold text-[#30332f]">Security prompt</label>
-                    <p className="mt-1 text-[11px] leading-4 text-[#777970]">Appended after the selected format prompt for every image.</p>
+              <div className="grid gap-6 xl:grid-cols-2">
+                <div>
+                  <div className="mb-3 flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold text-[#30332f]">Format prompt</p>
+                      <p className="mt-1 text-[11px] leading-4 text-[#777970]">Changes with the selected document type.</p>
+                    </div>
+                    <span className="shrink-0 rounded-md border border-[#d8d5ca] bg-white px-2 py-1 font-mono text-[9px] uppercase tracking-[0.08em] text-[#6f716c]">Selected format</span>
                   </div>
-                  <span className="shrink-0 rounded-md border border-[#cbd7d0] bg-[#edf4ef] px-2 py-1 font-mono text-[9px] uppercase tracking-[0.08em] text-[#37634f]">All formats</span>
+                  <div className="mb-4 grid grid-cols-3 rounded-lg bg-[#eceae3] p-1" role="tablist" aria-label="Document prompt type">
+                    {(Object.keys(DOCUMENT_LABELS) as DocumentKind[]).map((kind) => (
+                      <button
+                        key={kind}
+                        type="button"
+                        role="tab"
+                        aria-selected={activePrompt === kind}
+                        onClick={() => setActivePrompt(kind)}
+                        className={`rounded-md px-3 py-2 text-xs font-medium transition ${activePrompt === kind ? "bg-white text-[#244d3e] shadow-sm" : "text-[#70736c] hover:text-[#30332f]"}`}
+                      >
+                        {DOCUMENT_LABELS[kind]}
+                      </button>
+                    ))}
+                  </div>
+                  <textarea
+                    aria-label={`${DOCUMENT_LABELS[activePrompt]} image description prompt`}
+                    value={prompts[activePrompt]}
+                    onChange={(event) => setPrompts((current) => ({ ...current, [activePrompt]: event.target.value }))}
+                    className="min-h-52 w-full resize-y rounded-xl border border-[#d5d2c8] bg-white px-4 py-3.5 text-[13px] leading-6 text-[#3b3d39] outline-none transition placeholder:text-[#a6a69f] focus:border-[#6b9483] focus:ring-4 focus:ring-[#6b9483]/10"
+                    spellCheck
+                  />
+                  <div className="mt-2 flex items-center justify-between font-mono text-[10px] text-[#85867f]">
+                    <span>Used only for embedded image descriptions</span>
+                    <span>{prompts[activePrompt].length.toLocaleString()} chars</span>
+                  </div>
                 </div>
-                <textarea
-                  id="security-prompt"
-                  aria-label="Shared image security prompt"
-                  value={securityPrompt}
-                  onChange={(event) => setSecurityPrompt(event.target.value)}
-                  className="min-h-48 w-full resize-y rounded-xl border border-[#d5d2c8] bg-[#f8faf7] px-4 py-3.5 text-[13px] leading-6 text-[#3b3d39] outline-none transition focus:border-[#6b9483] focus:ring-4 focus:ring-[#6b9483]/10"
-                  spellCheck
-                />
-                <div className="mt-2 flex items-center justify-between font-mono text-[10px] text-[#85867f]">
-                  <span>Accuracy, refusal, and anti-hallucination rules</span>
-                  <span>{securityPrompt.length.toLocaleString()} chars</span>
+
+                <div className="border-t border-[#ddd9cf] pt-6 xl:border-l xl:border-t-0 xl:pl-6 xl:pt-0">
+                  <div className="mb-3 flex items-start justify-between gap-4">
+                    <div>
+                      <label htmlFor="security-prompt" className="text-xs font-semibold text-[#30332f]">Security prompt</label>
+                      <p className="mt-1 text-[11px] leading-4 text-[#777970]">Higher-priority accuracy rules applied to every image.</p>
+                    </div>
+                    <span className="shrink-0 rounded-md border border-[#cbd7d0] bg-[#edf4ef] px-2 py-1 font-mono text-[9px] uppercase tracking-[0.08em] text-[#37634f]">All formats</span>
+                  </div>
+                  <textarea
+                    id="security-prompt"
+                    aria-label="Shared image security prompt"
+                    value={securityPrompt}
+                    onChange={(event) => setSecurityPrompt(event.target.value)}
+                    className="min-h-[16.25rem] w-full resize-y rounded-xl border border-[#d5d2c8] bg-[#f8faf7] px-4 py-3.5 text-[13px] leading-6 text-[#3b3d39] outline-none transition focus:border-[#6b9483] focus:ring-4 focus:ring-[#6b9483]/10"
+                    spellCheck
+                  />
+                  <div className="mt-2 flex items-center justify-between font-mono text-[10px] text-[#85867f]">
+                    <span>Accuracy, refusal, and anti-hallucination rules</span>
+                    <span>{securityPrompt.length.toLocaleString()} chars</span>
+                  </div>
                 </div>
               </div>
             </div>
