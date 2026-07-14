@@ -1,0 +1,87 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f5f3ed;
+  --foreground: #20211f;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", "Geist Mono Fallback", ui-monospace, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--background);
+}
+
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.font-display {
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.tool-button {
+  display: inline-flex;
+  height: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border: 1px solid #d1cec4;
+  border-radius: 0.55rem;
+  background: #fbfaf6;
+  padding: 0 0.8rem;
+  color: #4f554f;
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: border-color 150ms, background 150ms, color 150ms;
+}
+
+.tool-button:hover {
+  border-color: #9ea69e;
+  background: white;
+  color: #21483a;
+}
+
+.audit-editor {
+  display: block;
+  width: 100%;
+  min-height: 30rem;
+  resize: vertical;
+  border: 0;
+  padding: 1.1rem;
+  color: #333a36;
+  font-family: "Geist Mono", "Geist Mono Fallback", ui-monospace, monospace;
+  font-size: 0.75rem;
+  line-height: 1.7;
+  outline: none;
+}
+
+.audit-editor:focus {
+  box-shadow: inset 0 0 0 2px rgba(63, 111, 94, 0.24);
+}
+
+::selection {
+  background: #cfe0d4;
+  color: #183b32;
+}
