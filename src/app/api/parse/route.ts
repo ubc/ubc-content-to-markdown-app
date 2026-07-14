@@ -144,13 +144,14 @@ export async function POST(request: Request) {
         imageCalls += 1;
         const response = await openai.responses.create({
           model,
+          instructions: securityPrompt,
           input: [
             {
               role: "user",
               content: [
                 {
                   type: "input_text",
-                  text: `${prompts[documentKind]}\n\n${securityPrompt}\n\n${fileContext(image)}`,
+                  text: `${prompts[documentKind]}\n\n${fileContext(image)}`,
                 },
                 {
                   type: "input_image",

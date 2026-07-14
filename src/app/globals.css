@@ -86,12 +86,13 @@ button {
 
 .help-tip-content {
   position: absolute;
-  z-index: 20;
-  bottom: calc(100% + 0.55rem);
+  z-index: 50;
+  top: calc(100% + 0.55rem);
+  bottom: auto;
   left: 50%;
   width: 16rem;
   padding: 0.65rem 0.75rem;
-  transform: translate(-50%, 0.25rem);
+  transform: translate(-50%, -0.25rem);
   border: 1px solid #d1cec4;
   border-radius: 0.6rem;
   background: #183b32;
@@ -105,6 +106,11 @@ button {
   pointer-events: none;
   box-shadow: 0 10px 30px rgba(24, 59, 50, 0.2);
   transition: opacity 140ms, transform 140ms, visibility 140ms;
+}
+
+.help-tip:hover,
+.help-tip:focus {
+  z-index: 60;
 }
 
 .help-tip:hover .help-tip-content,

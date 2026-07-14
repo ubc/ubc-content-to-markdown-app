@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import {
   DEFAULT_PROMPTS,
+  DEFAULT_SECURITY_PROMPT,
   DOCUMENT_LABELS,
   extensionToDocumentKind,
   type DocumentKind,
@@ -76,6 +77,7 @@ export function AuditWorkspace() {
   const [file, setFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [prompts, setPrompts] = useState(DEFAULT_PROMPTS);
+  const [securityPrompt, setSecurityPrompt] = useState(DEFAULT_SECURITY_PROMPT);
   const [activePrompt, setActivePrompt] = useState<DocumentKind>("pdf");
   const [includeImages, setIncludeImages] = useState(true);
   const [model, setModel] = useState("gpt-4.1-mini");
@@ -122,6 +124,7 @@ export function AuditWorkspace() {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("prompts", JSON.stringify(prompts));
+    formData.append("securityPrompt", securityPrompt);
     formData.append("includeImages", String(includeImages));
     formData.append("model", model);
     formData.append("imageConcurrency", String(concurrency));
@@ -301,11 +304,33 @@ export function AuditWorkspace() {
                 <span>Used only for embedded image descriptions</span>
                 <span>{prompts[activePrompt].length.toLocaleString()} chars</span>
               </div>
+
+              <div className="mt-5 border-t border-[#ddd9cf] pt-5">
+                <div className="mb-3 flex items-start justify-between gap-4">
+                  <div>
+                    <label htmlFor="security-prompt" className="text-xs font-semibold text-[#30332f]">Security prompt</label>
+                    <p className="mt-1 text-[11px] leading-4 text-[#777970]">Appended after the selected format prompt for every image.</p>
+                  </div>
+                  <span className="shrink-0 rounded-md border border-[#cbd7d0] bg-[#edf4ef] px-2 py-1 font-mono text-[9px] uppercase tracking-[0.08em] text-[#37634f]">All formats</span>
+                </div>
+                <textarea
+                  id="security-prompt"
+                  aria-label="Shared image security prompt"
+                  value={securityPrompt}
+                  onChange={(event) => setSecurityPrompt(event.target.value)}
+                  className="min-h-48 w-full resize-y rounded-xl border border-[#d5d2c8] bg-[#f8faf7] px-4 py-3.5 text-[13px] leading-6 text-[#3b3d39] outline-none transition focus:border-[#6b9483] focus:ring-4 focus:ring-[#6b9483]/10"
+                  spellCheck
+                />
+                <div className="mt-2 flex items-center justify-between font-mono text-[10px] text-[#85867f]">
+                  <span>Accuracy, refusal, and anti-hallucination rules</span>
+                  <span>{securityPrompt.length.toLocaleString()} chars</span>
+                </div>
+              </div>
             </div>
           </section>
         </div>
 
-        <section className="mt-6 overflow-hidden rounded-2xl border border-[#d4d0c5] bg-[#fbfaf6]">
+        <section className="relative z-20 mt-6 overflow-visible rounded-2xl border border-[#d4d0c5] bg-[#fbfaf6]">
           <div className="grid divide-y divide-[#ddd9cf] lg:grid-cols-[1fr_auto] lg:divide-x lg:divide-y-0">
             <div className="grid gap-5 p-5 md:grid-cols-3 md:p-6">
               <label className="flex items-center justify-between gap-4 rounded-xl border border-[#d8d5cb] bg-white px-4 py-3">
