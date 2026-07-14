@@ -45,6 +45,17 @@ function formatBytes(bytes: number) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
+function HelpTip({ text }: { text: string }) {
+  return (
+    <span className="help-tip" tabIndex={0} aria-label={text}>
+      ?
+      <span className="help-tip-content" role="tooltip">
+        {text}
+      </span>
+    </span>
+  );
+}
+
 function lineComparison(generated: string, manual: string) {
   const clean = (value: string) =>
     value.split("\n").map((line) => line.trim()).filter(Boolean);
@@ -320,11 +331,17 @@ export function AuditWorkspace() {
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <label>
-                  <span className="mb-1.5 block text-xs font-semibold">Concurrency</span>
+                  <span className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold">
+                    Concurrency
+                    <HelpTip text="The maximum number of unique images sent to OpenAI at the same time. Higher values can parse faster but may encounter API rate limits." />
+                  </span>
                   <input type="number" min="1" max="12" value={concurrency} onChange={(event) => setConcurrency(Number(event.target.value))} className="h-10 w-full rounded-lg border border-[#d4d1c7] bg-white px-3 font-mono text-xs outline-none focus:border-[#6b9483]" />
                 </label>
                 <label>
-                  <span className="mb-1.5 block text-xs font-semibold">Repeat skip</span>
+                  <span className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold">
+                    Repeat skip
+                    <HelpTip text="Skip an identical image when it appears in this many places, since repeated images are usually logos, backgrounds, or other template decorations." />
+                  </span>
                   <input type="number" min="1" max="50" value={decorativeThreshold} onChange={(event) => setDecorativeThreshold(Number(event.target.value))} className="h-10 w-full rounded-lg border border-[#d4d1c7] bg-white px-3 font-mono text-xs outline-none focus:border-[#6b9483]" />
                 </label>
               </div>

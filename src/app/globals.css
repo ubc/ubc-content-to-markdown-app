@@ -63,6 +63,57 @@ button {
   color: #21483a;
 }
 
+.help-tip {
+  position: relative;
+  display: inline-grid;
+  width: 1rem;
+  height: 1rem;
+  place-items: center;
+  border: 1px solid #a8aca4;
+  border-radius: 999px;
+  color: #6c726d;
+  font-family: "Geist Mono", "Geist Mono Fallback", ui-monospace, monospace;
+  font-size: 0.6rem;
+  line-height: 1;
+  cursor: help;
+  outline: none;
+}
+
+.help-tip:focus-visible {
+  border-color: #3f6f5e;
+  box-shadow: 0 0 0 3px rgba(63, 111, 94, 0.14);
+}
+
+.help-tip-content {
+  position: absolute;
+  z-index: 20;
+  bottom: calc(100% + 0.55rem);
+  left: 50%;
+  width: 16rem;
+  padding: 0.65rem 0.75rem;
+  transform: translate(-50%, 0.25rem);
+  border: 1px solid #d1cec4;
+  border-radius: 0.6rem;
+  background: #183b32;
+  color: white;
+  font-family: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.7rem;
+  font-weight: 400;
+  line-height: 1.45;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  box-shadow: 0 10px 30px rgba(24, 59, 50, 0.2);
+  transition: opacity 140ms, transform 140ms, visibility 140ms;
+}
+
+.help-tip:hover .help-tip-content,
+.help-tip:focus .help-tip-content {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+}
+
 .audit-editor {
   display: block;
   width: 100%;

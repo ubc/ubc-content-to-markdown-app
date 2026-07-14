@@ -9,6 +9,7 @@ import {
 } from "ubc-genai-toolkit-document-parsing";
 import {
   DEFAULT_PROMPTS,
+  DEFAULT_SECURITY_PROMPT,
   extensionToDocumentKind,
   type DocumentKind,
 } from "@/lib/prompts";
@@ -61,6 +62,15 @@ function parsePrompts(value: FormDataEntryValue | null): ParserPrompts {
   return prompts;
 }
 
+function parseSecurityPrompt(value: FormDataEntryValue | null) {
+  const prompt = typeof value === "string" ? value.trim() : DEFAULT_SECURITY_PROMPT;
+  if (!prompt) throw new Error("The security prompt cannot be empty.");
+  if (prompt.length > MAX_PROMPT_LENGTH) {
+    throw new Error("The security prompt is too long.");
+  }
+  return prompt;
+}
+
 function fileContext(image: EmbeddedImage) {
   if (image.slideNumber) return `This image is from slide ${image.slideNumber}.`;
   if (image.pageNumber) return `This image is from page ${image.pageNumber}.`;
@@ -99,8 +109,10 @@ export async function POST(request: Request) {
   }
 
   let prompts: ParserPrompts;
+  let securityPrompt: string;
   try {
     prompts = parsePrompts(formData.get("prompts"));
+    securityPrompt = parseSecurityPrompt(formData.get("securityPrompt"));
   } catch (error) {
     return jsonError(error instanceof Error ? error.message : "Invalid prompts.", 400);
   }
@@ -138,7 +150,7 @@ export async function POST(request: Request) {
               content: [
                 {
                   type: "input_text",
-                  text: `${prompts[documentKind]}\n\n${fileContext(image)}`,
+                  text: `${prompts[documentKind]}\n\n${securityPrompt}\n\n${fileContext(image)}`,
                 },
                 {
                   type: "input_image",
