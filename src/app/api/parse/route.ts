@@ -1,6 +1,7 @@
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import OpenAI from "openai";
 import {
   DocumentParsingModule,
@@ -113,6 +114,24 @@ function positiveInteger(value: FormDataEntryValue | null, fallback: number, max
   return Number.isInteger(parsed) && parsed > 0 && parsed <= max ? parsed : fallback;
 }
 
+async function configurePdfWorker() {
+  const dynamicImport = new Function("specifier", "return import(specifier)") as (
+    specifier: string,
+  ) => Promise<{
+    GlobalWorkerOptions: { workerSrc: string };
+  }>;
+  const pdfjs = await dynamicImport("pdfjs-dist/legacy/build/pdf.mjs");
+  const workerPath = path.join(
+    process.cwd(),
+    "node_modules",
+    "pdfjs-dist",
+    "legacy",
+    "build",
+    "pdf.worker.mjs",
+  );
+  pdfjs.GlobalWorkerOptions.workerSrc = pathToFileURL(workerPath).href;
+}
+
 export async function POST(request: Request) {
   let formData: FormData;
   try {
@@ -168,6 +187,7 @@ export async function POST(request: Request) {
   let imageFailures = 0;
   let emptyImageResponses = 0;
   let detectedImages: number | null = null;
+  let pdfWorkerConfigured: boolean | null = null;
   const parserDiagnostics: ParserDiagnostic[] = [];
 
   const recordParserDiagnostic = (
@@ -251,6 +271,16 @@ export async function POST(request: Request) {
   try {
     await writeFile(temporaryFile, Buffer.from(await upload.arrayBuffer()));
 
+    if (documentKind === "pdf" && imageDescriber) {
+      try {
+        await configurePdfWorker();
+        pdfWorkerConfigured = true;
+      } catch (error) {
+        pdfWorkerConfigured = false;
+        recordParserDiagnostic("error", "PDF worker configuration failed", { error });
+      }
+    }
+
     const parser = new DocumentParsingModule({
       logger: parserLogger,
       imageDescriber,
@@ -280,6 +310,7 @@ export async function POST(request: Request) {
         emptyImageResponses,
         detectedImages,
         imageDescriptionsEnabled: includeImages,
+        pdfWorkerConfigured,
         parserDiagnostics,
         slideCount: parsedSlides.length,
         elapsedMs: Date.now() - startedAt,

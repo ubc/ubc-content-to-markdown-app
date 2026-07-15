@@ -31,6 +31,7 @@ interface ParseMetadata {
   emptyImageResponses: number;
   detectedImages: number | null;
   imageDescriptionsEnabled: boolean;
+  pdfWorkerConfigured: boolean | null;
   parserDiagnostics: Array<{
     level: "warning" | "error";
     message: string;
@@ -134,6 +135,7 @@ export function AuditWorkspace() {
         fileType: metadata.fileType,
         detectedInputType: metadata.detectedInputType,
         imageDescriptionsEnabled: metadata.imageDescriptionsEnabled,
+        pdfWorkerConfigured: metadata.pdfWorkerConfigured,
         detectedImages: metadata.detectedImages,
         imageCalls: metadata.imageCalls,
         describedImages: metadata.describedImages,
@@ -595,7 +597,7 @@ export function AuditWorkspace() {
                       </ul>
                     )}
                     <p className="mt-3 font-mono text-[10px] text-[#846b3f]">
-                      App {result.metadata.appVersion} · {result.metadata.runtime} · detected images {result.metadata.detectedImages ?? "unknown"}
+                      App {result.metadata.appVersion} · {result.metadata.runtime} · PDF worker {result.metadata.pdfWorkerConfigured === null ? "n/a" : result.metadata.pdfWorkerConfigured ? "configured" : "failed"} · detected images {result.metadata.detectedImages ?? "unknown"}
                     </p>
                   </div>
                 )}
