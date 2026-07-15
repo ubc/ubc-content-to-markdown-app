@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
+
 const path = require("node:path");
 const Module = require("node:module");
 
