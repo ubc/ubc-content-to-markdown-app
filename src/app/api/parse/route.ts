@@ -323,7 +323,13 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Document parsing failed", error);
     const message = error instanceof Error ? error.message : "Unknown parser error";
-    return jsonError(`Parsing failed: ${message}`, 500);
+    const diagnostic = [...parserDiagnostics]
+      .reverse()
+      .find((item) => item.detail);
+    const detail = diagnostic
+      ? ` (${diagnostic.message}: ${diagnostic.detail})`
+      : "";
+    return jsonError(`Parsing failed: ${message}${detail}`, 500);
   } finally {
     await rm(temporaryDirectory, { recursive: true, force: true });
   }
