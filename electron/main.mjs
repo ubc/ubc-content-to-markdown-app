@@ -176,6 +176,7 @@ async function startServer() {
         ? { NODE_PATH: path.join(process.resourcesPath, "app.asar", "node_modules") }
         : {}),
       NODE_ENV: app.isPackaged ? "production" : "development",
+      DESKTOP_APP_VERSION: app.getVersion(),
       PORT: String(port),
     },
     stdio: app.isPackaged ? "pipe" : "inherit",

@@ -13,6 +13,7 @@ import {
   extensionToDocumentKind,
   type DocumentKind,
 } from "@/lib/prompts";
+import packageInfo from "../../../../package.json";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,6 +27,29 @@ interface ParserPrompts {
   pdf: string;
   docx: string;
   pptx: string;
+}
+
+interface ParserDiagnostic {
+  level: "warning" | "error";
+  message: string;
+  detail: string | null;
+  count: number;
+}
+
+function diagnosticDetail(value: unknown) {
+  if (!value) return null;
+  if (value instanceof Error) {
+    const error = value as Error & { code?: unknown; status?: unknown };
+    const qualifiers = [error.code, error.status]
+      .filter((item) => typeof item === "string" || typeof item === "number")
+      .map(String);
+    return [error.name, error.message, qualifiers.length ? `(${qualifiers.join(", ")})` : ""]
+      .filter(Boolean)
+      .join(": ")
+      .slice(0, 1_000);
+  }
+  if (typeof value === "string") return value.slice(0, 1_000);
+  return String(value).slice(0, 1_000);
 }
 
 function jsonError(message: string, status: number) {
@@ -141,35 +165,83 @@ export async function POST(request: Request) {
   const parsedSlides: ParsedSlide[] = [];
   let imageCalls = 0;
   let describedImages = 0;
+  let imageFailures = 0;
+  let emptyImageResponses = 0;
+  let detectedImages: number | null = null;
+  const parserDiagnostics: ParserDiagnostic[] = [];
+
+  const recordParserDiagnostic = (
+    level: ParserDiagnostic["level"],
+    message: string,
+    metadata?: Record<string, unknown>,
+  ) => {
+    const detail = diagnosticDetail(metadata?.error);
+    const existing = parserDiagnostics.find(
+      (item) => item.level === level && item.message === message && item.detail === detail,
+    );
+    if (existing) {
+      existing.count += 1;
+      return;
+    }
+    if (parserDiagnostics.length >= 20) return;
+    parserDiagnostics.push({
+      level,
+      message,
+      detail,
+      count: 1,
+    });
+  };
+
+  const parserLogger = {
+    debug(message: string, metadata?: Record<string, unknown>) {
+      if (message === "PDF image de-duplication summary") {
+        const total = metadata?.totalImagePlacements;
+        if (typeof total === "number") detectedImages = total;
+      }
+    },
+    info() {},
+    warn(message: string, metadata?: Record<string, unknown>) {
+      recordParserDiagnostic("warning", message, metadata);
+    },
+    error(message: string, metadata?: Record<string, unknown>) {
+      recordParserDiagnostic("error", message, metadata);
+    },
+  };
   const openai = includeImages && apiKey ? new OpenAI({ apiKey }) : null;
 
   const imageDescriber = openai
     ? async (image: EmbeddedImage) => {
         imageCalls += 1;
-        const response = await openai.responses.create({
-          model,
-          instructions: securityPrompt,
-          input: [
-            {
-              role: "user",
-              content: [
-                {
-                  type: "input_text",
-                  text: `${prompts[documentKind]}\n\n${fileContext(image)}`,
-                },
-                {
-                  type: "input_image",
-                  image_url: `data:${image.mimeType};base64,${image.data.toString("base64")}`,
-                  detail: "high",
-                },
-              ],
-            },
-          ],
-          max_output_tokens: 1000,
-        });
-        const description = normalizeDescription(response.output_text || "");
-        if (description) describedImages += 1;
-        return description;
+        try {
+          const response = await openai.responses.create({
+            model,
+            instructions: securityPrompt,
+            input: [
+              {
+                role: "user",
+                content: [
+                  {
+                    type: "input_text",
+                    text: `${prompts[documentKind]}\n\n${fileContext(image)}`,
+                  },
+                  {
+                    type: "input_image",
+                    image_url: `data:${image.mimeType};base64,${image.data.toString("base64")}`,
+                    detail: "high",
+                  },
+                ],
+              },
+            ],
+            max_output_tokens: 1000,
+          });
+          const description = normalizeDescription(response.output_text || "");
+          if (description) describedImages += 1;
+          else emptyImageResponses += 1;
+          return description;
+        } catch (error) {
+          imageFailures += 1;
+          throw error;
+        }
       }
     : undefined;
 
@@ -180,6 +252,7 @@ export async function POST(request: Request) {
     await writeFile(temporaryFile, Buffer.from(await upload.arrayBuffer()));
 
     const parser = new DocumentParsingModule({
+      logger: parserLogger,
       imageDescriber,
       imageConcurrency,
       decorativeImageSlideThreshold: decorativeThreshold,
@@ -203,10 +276,17 @@ export async function POST(request: Request) {
         words,
         imageCalls,
         describedImages,
+        imageFailures,
+        emptyImageResponses,
+        detectedImages,
+        imageDescriptionsEnabled: includeImages,
+        parserDiagnostics,
         slideCount: parsedSlides.length,
         elapsedMs: Date.now() - startedAt,
         model: includeImages ? model : null,
         toolkitVersion: "0.3.0-local",
+        appVersion: process.env.DESKTOP_APP_VERSION || packageInfo.version,
+        runtime: `${process.platform}-${process.arch}`,
       },
     });
   } catch (error) {

@@ -27,10 +27,22 @@ interface ParseMetadata {
   words: number;
   imageCalls: number;
   describedImages: number;
+  imageFailures: number;
+  emptyImageResponses: number;
+  detectedImages: number | null;
+  imageDescriptionsEnabled: boolean;
+  parserDiagnostics: Array<{
+    level: "warning" | "error";
+    message: string;
+    detail: string | null;
+    count: number;
+  }>;
   slideCount: number;
   elapsedMs: number;
   model: string | null;
   toolkitVersion: string;
+  appVersion: string;
+  runtime: string;
 }
 
 interface ParseResult {
@@ -104,11 +116,37 @@ export function AuditWorkspace() {
   const [isParsing, setIsParsing] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [diagnosticsCopied, setDiagnosticsCopied] = useState(false);
 
   const comparison = useMemo(
     () => lineComparison(result?.markdown ?? "", manualMarkdown),
     [result, manualMarkdown],
   );
+
+  const diagnosticReport = useMemo(() => {
+    if (!result) return "";
+    const { metadata } = result;
+    return JSON.stringify(
+      {
+        appVersion: metadata.appVersion,
+        toolkitVersion: metadata.toolkitVersion,
+        runtime: metadata.runtime,
+        fileType: metadata.fileType,
+        detectedInputType: metadata.detectedInputType,
+        imageDescriptionsEnabled: metadata.imageDescriptionsEnabled,
+        detectedImages: metadata.detectedImages,
+        imageCalls: metadata.imageCalls,
+        describedImages: metadata.describedImages,
+        imageFailures: metadata.imageFailures,
+        emptyImageResponses: metadata.emptyImageResponses,
+        parserDiagnostics: metadata.parserDiagnostics,
+        elapsedMs: metadata.elapsedMs,
+        model: metadata.model,
+      },
+      null,
+      2,
+    );
+  }, [result]);
 
   useEffect(() => {
     const settings = window.desktopSettings;
@@ -214,6 +252,13 @@ export function AuditWorkspace() {
     await navigator.clipboard.writeText(result.markdown);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1600);
+  }
+
+  async function copyDiagnostics() {
+    if (!diagnosticReport) return;
+    await navigator.clipboard.writeText(diagnosticReport);
+    setDiagnosticsCopied(true);
+    window.setTimeout(() => setDiagnosticsCopied(false), 1600);
   }
 
   function downloadMarkdown() {
@@ -505,6 +550,10 @@ export function AuditWorkspace() {
             </div>
             {result && (
               <div className="hidden items-center gap-2 sm:flex">
+                <button type="button" onClick={copyDiagnostics} className="tool-button">
+                  {diagnosticsCopied ? <CheckIcon className="h-4 w-4" /> : <CopyIcon className="h-4 w-4" />}
+                  {diagnosticsCopied ? "Copied" : "Copy diagnostics"}
+                </button>
                 <button type="button" onClick={copyMarkdown} className="tool-button">
                   {copied ? <CheckIcon className="h-4 w-4" /> : <CopyIcon className="h-4 w-4" />}
                   {copied ? "Copied" : "Copy"}
@@ -518,6 +567,38 @@ export function AuditWorkspace() {
 
           {result ? (
             <>
+              {result.metadata.imageDescriptionsEnabled &&
+                (result.metadata.imageCalls === 0 || result.metadata.parserDiagnostics.length > 0) && (
+                  <div role="status" className="mb-4 rounded-xl border border-[#dfbd83] bg-[#fff8e8] px-4 py-3 text-[#684d21]">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold">Image-processing diagnostics</p>
+                        <p className="mt-1 text-xs leading-5">
+                          {result.metadata.imageCalls === 0
+                            ? "Image descriptions were enabled, but the parser made no image-description calls."
+                            : `${result.metadata.imageFailures} image call(s) failed and ${result.metadata.emptyImageResponses} returned no usable description.`}
+                        </p>
+                      </div>
+                      <button type="button" onClick={copyDiagnostics} className="rounded-md border border-[#d5b77e] bg-white px-3 py-1.5 text-xs font-semibold hover:bg-[#fffdf7]">
+                        {diagnosticsCopied ? "Copied" : "Copy diagnostics"}
+                      </button>
+                    </div>
+                    {result.metadata.parserDiagnostics.length > 0 && (
+                      <ul className="mt-3 space-y-2 border-t border-[#ead5ac] pt-3 font-mono text-[11px] leading-5">
+                        {result.metadata.parserDiagnostics.map((diagnostic, index) => (
+                          <li key={`${diagnostic.message}-${index}`}>
+                            <span className="font-semibold uppercase">{diagnostic.level}:</span> {diagnostic.message}
+                            {diagnostic.detail ? ` — ${diagnostic.detail}` : ""}
+                            {diagnostic.count > 1 ? ` (repeated ${diagnostic.count} times)` : ""}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    <p className="mt-3 font-mono text-[10px] text-[#846b3f]">
+                      App {result.metadata.appVersion} · {result.metadata.runtime} · detected images {result.metadata.detectedImages ?? "unknown"}
+                    </p>
+                  </div>
+                )}
               <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-5">
                 {[
                   ["Words", result.metadata.words.toLocaleString()],
