@@ -1,12 +1,17 @@
 {
   "name": "ngai_text",
   "version": "0.1.0",
+  "description": "A desktop audit workspace for the UBC GenAI document parser.",
+  "main": "electron/main.mjs",
   "private": true,
   "scripts": {
     "dev": "next dev --webpack -p 5731",
     "build": "next build --webpack",
     "start": "next start -p 5731",
-    "lint": "eslint"
+    "lint": "eslint",
+    "desktop:dev": "electron .",
+    "desktop:pack": "npm run build && electron-builder --dir",
+    "desktop:build": "npm run build && electron-builder"
   },
   "dependencies": {
     "file-type": "^20.5.0",
@@ -22,9 +27,69 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "electron": "^43.1.1",
+    "electron-builder": "^26.15.3",
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "build": {
+    "appId": "ca.ubc.document-parser-audit-lab",
+    "productName": "Document Parser Audit Lab",
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "asar": true,
+    "files": [
+      "electron/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": ".next/standalone",
+        "to": "server",
+        "filter": [
+          "**/*",
+          "!.env",
+          "!.env.*"
+        ]
+      },
+      {
+        "from": ".next/static",
+        "to": "server/.next/static",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "public",
+        "to": "server/public",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "mac": {
+      "category": "public.app-category.education",
+      "identity": null,
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "linux": {
+      "category": "Education",
+      "target": [
+        "AppImage"
+      ]
+    }
   }
 }

@@ -80,6 +80,7 @@ export function AuditWorkspace() {
   const [securityPrompt, setSecurityPrompt] = useState(DEFAULT_SECURITY_PROMPT);
   const [activePrompt, setActivePrompt] = useState<DocumentKind>("pdf");
   const [includeImages, setIncludeImages] = useState(true);
+  const [apiKey, setApiKey] = useState("");
   const [model, setModel] = useState("gpt-4.1-mini");
   const [concurrency, setConcurrency] = useState(5);
   const [decorativeThreshold, setDecorativeThreshold] = useState(5);
@@ -118,6 +119,10 @@ export function AuditWorkspace() {
       setError("Choose a document before running the parser.");
       return;
     }
+    if (includeImages && !apiKey.trim()) {
+      setError("Enter your OpenAI API key in the app, or turn off image descriptions.");
+      return;
+    }
 
     setError("");
     setIsParsing(true);
@@ -126,6 +131,7 @@ export function AuditWorkspace() {
     formData.append("prompts", JSON.stringify(prompts));
     formData.append("securityPrompt", securityPrompt);
     formData.append("includeImages", String(includeImages));
+    formData.append("apiKey", apiKey);
     formData.append("model", model);
     formData.append("imageConcurrency", String(concurrency));
     formData.append("decorativeThreshold", String(decorativeThreshold));
@@ -343,7 +349,28 @@ export function AuditWorkspace() {
 
         <section className="relative z-20 mt-6 overflow-visible rounded-2xl border border-[#d4d0c5] bg-[#fbfaf6]">
           <div className="grid divide-y divide-[#ddd9cf] lg:grid-cols-[1fr_auto] lg:divide-x lg:divide-y-0">
-            <div className="grid gap-5 p-5 md:grid-cols-3 md:p-6">
+            <div className="grid gap-5 p-5 md:grid-cols-2 md:p-6 xl:grid-cols-4">
+              <label className="block">
+                <span className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold">
+                  OpenAI API key
+                  <HelpTip text="Used only for image descriptions. The key stays in memory for this session and is sent only to the local parser running on your computer." />
+                </span>
+                <input
+                  type="password"
+                  value={apiKey}
+                  onChange={(event) => setApiKey(event.target.value)}
+                  disabled={!includeImages}
+                  required={includeImages}
+                  autoComplete="off"
+                  spellCheck={false}
+                  placeholder="sk-…"
+                  aria-describedby="api-key-note"
+                  className="h-10 w-full rounded-lg border border-[#d4d1c7] bg-white px-3 font-mono text-xs outline-none focus:border-[#6b9483] disabled:bg-[#efeee9] disabled:text-[#9a9a94]"
+                />
+                <span id="api-key-note" className="mt-1.5 block text-[10px] text-[#777970]">
+                  Required for images · session only · never saved
+                </span>
+              </label>
               <label className="flex items-center justify-between gap-4 rounded-xl border border-[#d8d5cb] bg-white px-4 py-3">
                 <span>
                   <span className="block text-xs font-semibold">Describe images</span>
@@ -386,7 +413,7 @@ export function AuditWorkspace() {
               <button
                 type="button"
                 onClick={parseDocument}
-                disabled={!file || isParsing}
+                disabled={!file || isParsing || (includeImages && !apiKey.trim())}
                 className="flex h-12 w-full min-w-52 items-center justify-center gap-2 rounded-xl bg-[#183b32] px-6 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(24,59,50,0.2)] transition hover:bg-[#244e42] disabled:cursor-not-allowed disabled:bg-[#a7aba5] disabled:shadow-none"
               >
                 {isParsing ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" /> : <SparkIcon className="h-4 w-4" />}

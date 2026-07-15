@@ -19,6 +19,7 @@ export const dynamic = "force-dynamic";
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
 const MAX_PROMPT_LENGTH = 12_000;
+const MAX_API_KEY_LENGTH = 512;
 const NO_CONTENT_VALUES = new Set(["NOCONTENT", "NOTHING", "NONE", "NA"]);
 
 interface ParserPrompts {
@@ -118,18 +119,21 @@ export async function POST(request: Request) {
   }
 
   const includeImages = formData.get("includeImages") !== "false";
-  const apiKey = process.env.OPENAI_API_KEY;
+  const submittedApiKey = formData.get("apiKey");
+  if (typeof submittedApiKey === "string" && submittedApiKey.length > MAX_API_KEY_LENGTH) {
+    return jsonError("The OpenAI API key is too long.", 400);
+  }
+  const apiKey = typeof submittedApiKey === "string" ? submittedApiKey.trim() : "";
   if (includeImages && !apiKey) {
     return jsonError(
-      "OPENAI_API_KEY is missing. Add it to .env.local, or turn off image descriptions.",
-      503,
+      "Enter an OpenAI API key in the app, or turn off image descriptions.",
+      400,
     );
   }
 
+  const submittedModel = formData.get("model");
   const model =
-    (typeof formData.get("model") === "string" && String(formData.get("model")).trim()) ||
-    process.env.OPENAI_MODEL ||
-    "gpt-4.1-mini";
+    (typeof submittedModel === "string" && submittedModel.trim()) || "gpt-4.1-mini";
   const imageConcurrency = positiveInteger(formData.get("imageConcurrency"), 5, 12);
   const decorativeThreshold = positiveInteger(formData.get("decorativeThreshold"), 5, 50);
 
