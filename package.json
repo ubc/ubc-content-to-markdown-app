@@ -39,6 +39,9 @@
     "productName": "Document Parser Audit Lab",
     "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
     "asar": true,
+    "asarUnpack": [
+      "electron/server-runner.cjs"
+    ],
     "files": [
       "electron/**/*",
       "package.json"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DEFAULT_PROMPTS,
   DEFAULT_SECURITY_PROMPT,
@@ -36,6 +36,18 @@ interface ParseMetadata {
 interface ParseResult {
   markdown: string;
   metadata: ParseMetadata;
+}
+
+interface DesktopSettings {
+  loadApiKey: () => Promise<string>;
+  saveApiKey: (apiKey: string) => Promise<void>;
+  clearApiKey: () => Promise<void>;
+}
+
+declare global {
+  interface Window {
+    desktopSettings?: DesktopSettings;
+  }
 }
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
@@ -81,6 +93,9 @@ export function AuditWorkspace() {
   const [activePrompt, setActivePrompt] = useState<DocumentKind>("pdf");
   const [includeImages, setIncludeImages] = useState(true);
   const [apiKey, setApiKey] = useState("");
+  const [isDesktopApp, setIsDesktopApp] = useState(false);
+  const [hasSavedApiKey, setHasSavedApiKey] = useState(false);
+  const [apiKeyStorageError, setApiKeyStorageError] = useState("");
   const [model, setModel] = useState("gpt-4.1-mini");
   const [concurrency, setConcurrency] = useState(5);
   const [decorativeThreshold, setDecorativeThreshold] = useState(5);
@@ -94,6 +109,49 @@ export function AuditWorkspace() {
     () => lineComparison(result?.markdown ?? "", manualMarkdown),
     [result, manualMarkdown],
   );
+
+  useEffect(() => {
+    const settings = window.desktopSettings;
+    if (!settings) return;
+
+    void settings
+      .loadApiKey()
+      .then((savedApiKey) => {
+        setIsDesktopApp(true);
+        if (!savedApiKey) return;
+        setApiKey(savedApiKey);
+        setHasSavedApiKey(true);
+      })
+      .catch(() => {
+        setIsDesktopApp(true);
+        setApiKeyStorageError("Could not load the saved API key.");
+      });
+  }, []);
+
+  async function persistApiKey(value: string) {
+    const settings = window.desktopSettings;
+    if (!settings) return;
+    try {
+      await settings.saveApiKey(value);
+      setHasSavedApiKey(Boolean(value.trim()));
+      setApiKeyStorageError("");
+    } catch {
+      setApiKeyStorageError("Could not save the API key securely on this Mac.");
+    }
+  }
+
+  async function forgetApiKey() {
+    const settings = window.desktopSettings;
+    if (!settings) return;
+    try {
+      await settings.clearApiKey();
+      setApiKey("");
+      setHasSavedApiKey(false);
+      setApiKeyStorageError("");
+    } catch {
+      setApiKeyStorageError("Could not remove the saved API key.");
+    }
+  }
 
   function chooseFile(candidate: File | null) {
     setError("");
@@ -123,6 +181,8 @@ export function AuditWorkspace() {
       setError("Enter your OpenAI API key in the app, or turn off image descriptions.");
       return;
     }
+
+    await persistApiKey(apiKey);
 
     setError("");
     setIsParsing(true);
@@ -350,15 +410,17 @@ export function AuditWorkspace() {
         <section className="relative z-20 mt-6 overflow-visible rounded-2xl border border-[#d4d0c5] bg-[#fbfaf6]">
           <div className="grid divide-y divide-[#ddd9cf] lg:grid-cols-[1fr_auto] lg:divide-x lg:divide-y-0">
             <div className="grid gap-5 p-5 md:grid-cols-2 md:p-6 xl:grid-cols-4">
-              <label className="block">
-                <span className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold">
+              <div className="block">
+                <label htmlFor="api-key" className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold">
                   OpenAI API key
-                  <HelpTip text="Used only for image descriptions. The key stays in memory for this session and is sent only to the local parser running on your computer." />
-                </span>
+                  <HelpTip text={isDesktopApp ? "Used only for image descriptions. The desktop app encrypts the key with your Mac's Keychain before saving it locally." : "Used only for image descriptions. The key stays in memory for this browser session and is sent only to the local parser running on your computer."} />
+                </label>
                 <input
+                  id="api-key"
                   type="password"
                   value={apiKey}
                   onChange={(event) => setApiKey(event.target.value)}
+                  onBlur={() => void persistApiKey(apiKey)}
                   disabled={!includeImages}
                   required={includeImages}
                   autoComplete="off"
@@ -368,9 +430,19 @@ export function AuditWorkspace() {
                   className="h-10 w-full rounded-lg border border-[#d4d1c7] bg-white px-3 font-mono text-xs outline-none focus:border-[#6b9483] disabled:bg-[#efeee9] disabled:text-[#9a9a94]"
                 />
                 <span id="api-key-note" className="mt-1.5 block text-[10px] text-[#777970]">
-                  Required for images · session only · never saved
+                  {isDesktopApp
+                    ? hasSavedApiKey
+                      ? "Saved securely to this Mac"
+                      : "Saved securely when you leave this field"
+                    : "Required for images · session only · never saved"}
                 </span>
-              </label>
+                {isDesktopApp && hasSavedApiKey && (
+                  <button type="button" onClick={() => void forgetApiKey()} className="mt-2 text-[10px] font-semibold text-[#7d4a3e] underline underline-offset-2 hover:text-[#57342b]">
+                    Forget saved key
+                  </button>
+                )}
+                {apiKeyStorageError && <p role="alert" className="mt-1.5 text-[10px] text-[#914434]">{apiKeyStorageError}</p>}
+              </div>
               <label className="flex items-center justify-between gap-4 rounded-xl border border-[#d8d5cb] bg-white px-4 py-3">
                 <span>
                   <span className="block text-xs font-semibold">Describe images</span>
