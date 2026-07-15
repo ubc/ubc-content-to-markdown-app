@@ -1,6 +1,6 @@
 {
   "name": "ngai_text",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A desktop audit workspace for the UBC GenAI document parser.",
   "main": "electron/main.mjs",
   "private": true,
