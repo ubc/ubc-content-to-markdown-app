@@ -1,6 +1,6 @@
 # Document Parser Audit Lab
 
-A local audit application for the unpublished UBC GenAI Toolkit document-parsing package. It accepts PDF, DOCX, and PPTX files, extracts their text to Markdown, describes embedded images through OpenAI, and provides a side-by-side workspace for comparison with manually produced Markdown.
+A local audit application for the unpublished UBC GenAI Toolkit document-parsing package. It accepts PDF, DOCX, and PPTX files, extracts their text to Markdown, describes embedded images through OpenAI, and provides a side-by-side workspace for comparison with manually produced Markdown
 
 ## Desktop app
 
